@@ -1,6 +1,17 @@
 use strict;
 use List::Util qw [max];
 
+# compares minion read alignment with reference
+# breaks each read down into kmers of size
+my $K=5;
+
+my $FIN=-999;
+
+# takes input from flattened aln file - format:
+
+# outputs reference kmer, reference kmer after alignment, minion kmer, number of matches
+# edit distance, number of insertions, number of deletions.
+
 # refname - name of reference sequence hit
 # refstart - start of alignment in reference
 # refalnsize - size of alignment in reference
@@ -23,23 +34,12 @@ use List::Util qw [max];
 
 while (!eof()) {
 	
-	my $finished = 0;
-	my $score = get_score();
-	my ($refname, $refstart, $refalnsize, $refstrand, $refseqsize, $refseq) = get_read();
-	my ($minname, $minstart, $minalnsize, $minstrand, $minseqsize, $minseq) = get_read();
-	my $realref = $refseq; $realref =~ s/-//g;
-	
-	if ($score) {
-	}
-	
-	if (0) {
-		printf "%s\t"x18 . "%s\n", 
-			$refname, $refstart, $refalnsize, $refstrand, $refseqsize, $refseq, $realref,
+	my ($refname, $refstart, $refalnsize, $refstrand, $refseqsize, $refseq, $realref,
 			$minname, $minstart, $minalnsize, $minstrand, $minseqsize, $minseq, $score, 
-			get_mismatch_stats($refseq,$minseq), get_longest_perfect_kmer($refseq,$minseq)
-	}
-
-	my $FIN=-999;
+			$match,$mism,$ins,$del,$bpkmer) = get_line();
+	
+	
+	my $finished = 0;
 	my $kstart = 0;
 	my $refkmer = "";
 	my $minkmer = "";
@@ -53,14 +53,15 @@ while (!eof()) {
 			my $realref = $refkmer;
 			$realref =~ s/-//g;
 			$minkmer = substr($minseq, $kstart - 1, length($refkmer));
-			printf "%s\t"x6 . "%s\n", $realref, $refkmer, $minkmer, 
-				get_mismatch_stats ($refkmer, $minkmer)   #4 values $match,$mism,$ins,$del 
-			;
+			printf "%s\t"x8 . "%s\n", $realref, $refkmer, $minkmer, 
+				get_mismatch_stats ($refkmer, $minkmer),   #4 values $match,$mism,$ins,$del 
+				get_kmer_complexity($refkmer)
+			unless $refkmer =~ m/N/;
 		}
 	}
 }
 	
-	sub get_read_type {
+sub get_read_type {
 	my $n = shift;
 	return 1 if $n =~ m/template/; 
 	return 2 if $n =~ m/complem/; 
@@ -68,25 +69,47 @@ while (!eof()) {
 	return 0;
 }
 
-sub get_read {
+sub get_kmer_complexity {
+	# returns 2 numbers base complexity and pyrimidene/purine complexity
+	my $k = shift;
+	my $l = scalar length($k);
+	my $bx = $l / 4;
+	my $ppx = $l / 2;
+	my $a = $k =~ tr/Aa/Aa/;
+	my $c = $k =~ tr/Cc/Cc/;
+	my $g = $k =~ tr/Gg/Gg/;
+	my $t = $k =~ tr/Tt/Tt/;
+	my $base_cplex = (( $a - $bx )**2)/$bx + (( $c - $bx )**2)/$bx + (( $g - $bx )**2)/$bx + (( $t - $bx )**2)/$bx;
+	my $pp_cplex = (( $a + $t - $ppx )**2)/$ppx + (( $c + $g - $ppx )**2)/$ppx;	
+	return ($base_cplex,$pp_cplex)
+}
+
+sub get_line {
 	$_ = <>;
 	chomp;
-	return (split(/\s+/))[1..6];
-}
-sub get_score {
-	$_ = <> until eof() or m/score=(\d+)/;
-	return $1;
+	return split(/\t/);
 }
 
-sub get_longest_perfect_kmer {
-	my ($r1,$r2) = @_;
-	my $maxpk=0;
-	my $pk=0;
-	for (my $i = 0; $i < length($r1); $i++) {
-		$maxpk = max($maxpk, substr($r1,$i,1) eq substr($r2,$i,1) ? ++$pk : ($pk=0));
+sub get_ref_kmer {
+	my ($seq,$ptr) = @_;
+	my $kmer = "";
+	my $Km1 = $K - 1; # K minus 1 for regex
+
+	# get K characters from reference (may include inserts)
+
+		#skip if starting with "-"
+		while ( ($ptr < length($seq) - $K) and substr($seq,$ptr,1) eq "-" ) {
+			$ptr += 1;
+		}
+		#try to get 5 bases from the reference
+		$kmer = sprintf "%s", substr($seq,$ptr) =~ m/^(([ACGTN]-*){$Km1}[ACGTN])/; 
+		$ptr += 1;
+	
+	if ($K == ($kmer=~tr/ACGTN//)) {
+		return $kmer,$ptr;
+	} else {
+		return ($FIN,$FIN);
 	}
-
-	return $maxpk;
 }
 
 sub get_mismatch_stats {
@@ -101,4 +124,5 @@ sub get_mismatch_stats {
 	my $del = $r2 =~ tr/-/-/;
 	return($match,$mism,$ins,$del);
 }
+
 

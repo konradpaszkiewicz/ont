@@ -1,0 +1,4 @@
+
+#from the flattenned aln file.
+perl kmer.pl < hq_aln.pao > 5-mer.txt
+sqlite3 kmer.sqlite.db < kmer.sql
