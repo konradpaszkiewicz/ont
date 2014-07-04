@@ -28,12 +28,16 @@ while (!eof()) {
 	my ($refname, $refstart, $refalnsize, $refstrand, $refseqsize, $refseq) = get_read();
 	my ($minname, $minstart, $minalnsize, $minstrand, $minseqsize, $minseq) = get_read();
 	my $realref = $refseq; $realref =~ s/-//g;
+	my $minqual = get_qual();
 	
-	printf "%s\t"x18 . "%s\n", 
-		$refname, $refstart, $refalnsize, $refstrand, $refseqsize, $refseq, $realref,
-		$minname, $minstart, $minalnsize, $minstrand, $minseqsize, $minseq, $score, 
-		get_mismatch_stats($refseq,$minseq), get_longest_perfect_kmer($refseq,$minseq)
-	if $score;
+	if ($score) {
+		printf "%s" . "\t%s"x18, 
+			$refname, $refstart, $refalnsize, $refstrand, $refseqsize, $refseq, $realref,
+			$minname, $minstart, $minalnsize, $minstrand, $minseqsize, $minseq, $score, 
+			get_mismatch_stats($refseq,$minseq), get_longest_perfect_kmer($refseq,$minseq);
+		printf "\t%s", $minqual if $minqual;
+		print "\n";
+	}
 }
 
 sub get_read_type {
@@ -49,9 +53,17 @@ sub get_read {
 	chomp;
 	return (split(/\s+/))[1..6];
 }
+
 sub get_score {
 	$_ = <> until eof() or m/score=(\d+)/;
 	return $1;
+}
+
+sub get_qual {
+	$_ = <>;
+	chomp;
+	my ($test,$refname,$qual) = split(/\s+/);
+	return $test eq 'q' ? $qual : undef; 
 }
 
 sub get_longest_perfect_kmer {
