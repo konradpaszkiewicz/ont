@@ -20,6 +20,7 @@ use List::Util qw [max];
 # number of insertions
 # number of deletions
 # longest prefect kmer
+# quality string if aln from fastq file
 
 while (!eof()) {
 	
