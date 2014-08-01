@@ -1,6 +1,13 @@
 use strict;
 use List::Util qw [max];
 
+# takes the output of a LAST aligmnent example format:
+# batch 0
+#a score=357
+#s reference_sequence                                                              844997 1414 + 910724 GAACTGGTGGATATTCACAAAACAGAG-A-CAGCTTATCCTTTCAATATCAAGGTTCAGTAAAGAAAACATATGTTGCCAAAAATAATTCTCAAAATAAATATACTACTACTTC
+#s channel_131_read_12_template_./raw_data/minion_0116_1_ch131_file14_strand.fast5      6 1311 +   1456 GAACTGGTGGGT--TGACAGAAC-GAGGAGCA-CTTAACATTT-AATAA-AA--TTCAGTAA-GAA--CATATGTCCCC-----TAGCCGTTACCATACATACCCT-CAA-TTC
+
+# converts to tsv file containing following columns
 # refname - name of reference sequence hit
 # refstart - start of alignment in reference
 # refalnsize - size of alignment in reference

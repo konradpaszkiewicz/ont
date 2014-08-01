@@ -11,17 +11,17 @@ CREATE TABLE kmer (
 		ppcomplex integer
 );
 
-.import 5-mer.txt kmer  --for example
+.import minion_reads.kmer kmer  --for example
 
 CREATE table kmer_summary as
-select realref, bcomplex, ppcomplex,
+select realref,
   count(*) as num,
   avg(matches) as avg_match,
   avg(edist) as avg_edist,
-  (refkmer=minkmer) as perfect,
+  sum(refkmer=minkmer) as perfect,
   avg(ins) as avg_ins,
   avg(del) as avg_del
 from kmer
-group by realref, bcomplex, ppcomplex
+group by realref
 ;
 

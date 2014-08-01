@@ -31,6 +31,7 @@ my $FIN=-999;
 # number of insertions
 # number of deletions
 # longest prefect kmer
+# kmer complexity - !!!under development - use at your own peril!!!
 
 while (!eof()) {
 	
